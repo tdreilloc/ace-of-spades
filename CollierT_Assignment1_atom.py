@@ -1,21 +1,30 @@
-import cv2 as cv
+import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 
 #Give me the name of the image file
 path1 = '/home/tdreilloc/Documents/CS463/assignments/'
 name = input("What's up, name of your image?")
+
 #Append image name to rest of file path for ease of user inputs
 path2 = path1 + name
-#Show the image
-img = cv.imread(path2, 0)
 
-#Threshold to make binary image
-ret,thresh1 = cv.threshold(img,127,255,cv.THRESH_BINARY)
-titles = ['original', 'binary']
-images = [img, thresh1]
-for i in range(2):
-    plt.subplot(2,3,i+1),plt.imshow(images[i], 'gray')
-    plt.title(titles[i])
-    plt.xticks([]),plt.yticks([])
-plt.show()
+#Read the image
+img = cv2.imread(path2, 0)
+
+connectivity = 8
+
+img = cv2.threshold(img, 150, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1]
+ret, labels = cv2.connectedComponents(img)
+
+label_hue = np.uint8(179*labels/np.max(labels))
+blank_ch = 255*np.ones_like(label_hue)
+labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
+
+labeled_img = cv2.cvtColor(labeled_img, cv2.COLOR_HSV2BGR)
+
+labeled_img[label_hue==0] = 0
+
+cv2.imshow('labeled image', labeled_img)
+cv2.waitKey()
+
