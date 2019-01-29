@@ -1,3 +1,6 @@
+#https://stackoverflow.com/questions/46441893/connected-component-labeling-in-python?rq=1
+#All credit goes to Alexander Reynolds, https://stackoverflow.com/users/5087436/alexander-reynolds
+
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
