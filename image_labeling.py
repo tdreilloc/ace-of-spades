@@ -11,6 +11,7 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+import pandas as pd
 
 #Give me the name of the image file
 path1 = '/home/tdreilloc/Documents/CS463/assignments/'
@@ -21,24 +22,38 @@ path2 = path1 + name
 
 #Read the image
 img = cv2.imread(path2, 0)
+cv2.imshow('original', img)
+cv2.waitKey()
+
 
 #Specify the connectivity
 connectivity = 8
 
 #Threshold to make inverted binary image
-img = cv2.threshold(img, 160, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1]
-
-#Perform morphological closing
-kernel = np.ones((4,4),np.uint8)
-closing = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
-cv2.imshow('closed',closing)
+img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1]
+cv2.imshow('binary', img)
 cv2.waitKey()
 
+kernel2 = np.ones((2,2),np.uint8)
+erosion = cv2.erode(img,kernel2,iterations = 1)
+cv2.imshow('eroded', erosion)
+cv2.waitKey()
+
+#Perform dilation to close the holes in the 4s
+kernel1 = np.ones((4,4),np.uint8)
+dilation = cv2.dilate(erosion,kernel1,iterations = 1)
+cv2.imshow('dilated', dilation)
+cv2.waitKey()
+
+kernel3 = np.ones((3,3),np.uint8)
+erosion2 = cv2.erode(dilation,kernel3,iterations = 1)
+
 #Create labels on the closed binary image
-ret, labels = cv2.connectedComponents(closing)
+ret, labels = cv2.connectedComponents(dilation)
 
 #Find contours and label all onnected components
-contours,hierarchy = cv2.findContours(closing,1,2)
+#https://stackoverflow.com/questions/46441893/connected-component-labeling-in-python?rq=1
+contours,hierarchy = cv2.findContours(dilation,1,2)
 label_hue = np.uint8(179*labels/np.max(labels))
 blank_ch = 255*np.ones_like(label_hue)
 labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
@@ -49,16 +64,46 @@ labeled_img[label_hue==0] = 0
 cv2.imshow('labeled image', labeled_img)
 cv2.waitKey()
 
-#Draw each rectangle for each object detected
-i = 0
-while i < len(contours):
-    cnt = contours[i]
+#Create array for geometric attributes
+a = np.zeros(shape=(11,4), dtype=object)
+#Column headers for data frame
+names = ['Area', 'Centroid', 'Bounding box', 'Circularity']
+#Index for data frame
+index = [_ for _ in range(11)]
+#Create data frame
+df = pd.DataFrame(a, index=index, columns=names)
+
+#Loop for each contour (object)
+x = 1
+i = 1
+while i <= len(contours):
+    cnt = contours[i-1]
+    #Get area of contour and put it in the table
+    area = cv2.contourArea(cnt)
+    #Get moments
     M = cv2.moments(cnt)
     rect = cv2.minAreaRect(cnt)
+    #Get bounding box and put it in table
     box = cv2.boxPoints(rect)
     box = np.int0(box)
-    cv2.drawContours(labeled_img,[box],0,(0,0,255),2)
+    #Get centroid and put it in the table
+    cx = int(M['m10']/M['m00'])
+    cy = int(M['m01']/M['m00'])
+    centroid = [cx, cy]
+    if area < 20:
+        x += 1
+    else:
+        a[i-x][0] = area
+        a[i-x][1] = centroid
+        a[i-x][2] = box
+        #Draws bounding box on the image
+        cv2.drawContours(labeled_img,[box],0,(150,150,255),1)
+        #Draw centroid on image
+        cv2.circle(labeled_img, (cx, cy), 2, (150,150,255), -1)
     i += 1
+
+#Output data table to .csv file
+df.to_csv('output.csv', index=True, header=True, sep=' ')
 
 #Show final image
 cv2.imshow('rectangle',labeled_img)
