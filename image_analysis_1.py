@@ -7,6 +7,8 @@
 #All credit goes to Alexander Reynolds, https://stackoverflow.com/users/5087436/alexander-reynolds
 #in regards to labeling the connected components with colors
 
+#THIS SCRIPT WILL HAVE TO BE TWEAKED ACCORDING TO THE IMAGE
+
 
 import cv2
 import numpy as np
@@ -65,11 +67,11 @@ cv2.imshow('labeled image', labeled_img)
 cv2.waitKey()
 
 #Create array for geometric attributes
-a = np.zeros(shape=(11,4), dtype=object)
+a = np.zeros(shape=(49,4), dtype=object)
 #Column headers for data frame
 names = ['Area', 'Centroid', 'Bounding box', 'Circularity']
 #Index for data frame
-index = [_ for _ in range(11)]
+index = [_ for _ in range(1,50,1)]
 #Create data frame
 df = pd.DataFrame(a, index=index, columns=names)
 
@@ -90,12 +92,16 @@ while i <= len(contours):
     cx = int(M['m10']/M['m00'])
     cy = int(M['m01']/M['m00'])
     centroid = [cx, cy]
+    #Get perimeter and make Circularity
+    perimeter = cv2.arcLength(cnt,True)
+    circularity = (int(perimeter)^2)/area
     if area < 20:
         x += 1
     else:
         a[i-x][0] = area
         a[i-x][1] = centroid
         a[i-x][2] = box
+        a[i-x][3] = round(circularity, 2)
         #Draws bounding box on the image
         cv2.drawContours(labeled_img,[box],0,(150,150,255),1)
         #Draw centroid on image
@@ -103,8 +109,9 @@ while i <= len(contours):
     i += 1
 
 #Output data table to .csv file
-df.to_csv('output.csv', index=True, header=True, sep=' ')
+df.to_csv('image_1.csv', index=True, header=True, sep=' ')
 
 #Show final image
+cv2.imwrite("/home/tdreilloc/Documents/CS463/assignments/image_1.jpg", labeled_img)
 cv2.imshow('rectangle',labeled_img)
 cv2.waitKey()
