@@ -11,14 +11,16 @@ contours,hierarchy = cv.findContours(thresh,1,2)
 
 
 #Draw each rectangle (bounding box?)
-i = 0
-while i < len(contours):
+i = 1
+while i <= len(contours):
     cnt = contours[i]
     M = cv.moments(cnt)
     rect = cv.minAreaRect(cnt)
     box = cv.boxPoints(rect)
     box = np.int0(box)
     cv.drawContours(thresh,[box],0,(0,0,255),2)
+    area = cv.contourArea(cnt)
+    print ("Object #"+str(i)+" = "+str(area))
     i += 1
 
 
