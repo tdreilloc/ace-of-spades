@@ -27,35 +27,77 @@ img = cv2.imread(path2, 0)
 cv2.imshow('original', img)
 cv2.waitKey()
 
+if name == 'image1.pgm':
+    threshold = 127
+    dil1 = 3
+    dil2 = 3
+    setpoint = 20
+
+if name == 'image2.pgm':
+    threshold = 130
+    ero1 = 2
+    ero2 = 2
+    dil1 = 4
+    dil2 = 4
+    setpoint = 20
+
+if name == 'image3.pgm':
+    threshold = 148
+    dil1 = 2
+    dil2 = 2
+    setpoint = 18
+
+if name == 'image4.pgm':
+    threshold = 68
+    ero1 = 6
+    ero2 = 5
+    dil1 = 6
+    dil2 = 6
+    setpoint = 20
+
+if name == 'image5.pgm':
+    threshold = 127
+    ero1 = 2
+    ero2 = 2
+    dil1 = 3
+    dil2 = 3
+    setpoint = 20
 
 #Specify the connectivity
 connectivity = 8
 
 #Threshold to make inverted binary image
-img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)[1]
+img = cv2.threshold(img, threshold, 255, cv2.THRESH_BINARY_INV)[1]
 cv2.imshow('binary', img)
 cv2.waitKey()
 
-kernel2 = np.ones((2,2),np.uint8)
-erosion = cv2.erode(img,kernel2,iterations = 1)
-cv2.imshow('eroded', erosion)
-cv2.waitKey()
+#Only perform on image2
+#if name == 'image2.pgm':
+#    kernel2 = np.ones((ero1,ero2),np.uint8)
+#    img = cv2.erode(img,kernel2,iterations = 1)
+#    cv2.imshow('eroded', img)
+#    cv2.waitKey()
+
 
 #Perform dilation to close the holes in the 4s
-kernel1 = np.ones((4,4),np.uint8)
-dilation = cv2.dilate(erosion,kernel1,iterations = 1)
-cv2.imshow('dilated', dilation)
+kernel1 = np.ones((dil1,dil2),np.uint8)
+img = cv2.dilate(img,kernel1,iterations = 1)
+cv2.imshow('dilated', img)
 cv2.waitKey()
 
-kernel3 = np.ones((3,3),np.uint8)
-erosion2 = cv2.erode(dilation,kernel3,iterations = 1)
+#Only perform on image4
+if name == 'image4.pgm':
+    kernel2 = np.ones((ero1,ero2),np.uint8)
+    img = cv2.erode(img,kernel2,iterations = 1)
+    cv2.imshow('eroded', img)
+    cv2.waitKey()
 
 #Create labels on the closed binary image
-ret, labels = cv2.connectedComponents(dilation)
+ret, labels = cv2.connectedComponents(img)
 
 #Find contours and label all onnected components
 #https://stackoverflow.com/questions/46441893/connected-component-labeling-in-python?rq=1
-contours,hierarchy = cv2.findContours(dilation,1,2)
+contours,hierarchy = cv2.findContours(img,1,2)
 label_hue = np.uint8(179*labels/np.max(labels))
 blank_ch = 255*np.ones_like(label_hue)
 labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
@@ -67,11 +109,11 @@ cv2.imshow('labeled image', labeled_img)
 cv2.waitKey()
 
 #Create array for geometric attributes
-a = np.zeros(shape=(49,4), dtype=object)
+a = np.zeros(shape=(99,4), dtype=object)
 #Column headers for data frame
 names = ['Area', 'Centroid', 'Bounding box', 'Circularity']
 #Index for data frame
-index = [_ for _ in range(1,50,1)]
+index = [_ for _ in range(1,100,1)]
 #Create data frame
 df = pd.DataFrame(a, index=index, columns=names)
 
@@ -88,14 +130,16 @@ while i <= len(contours):
     #Get bounding box and put it in table
     box = cv2.boxPoints(rect)
     box = np.int0(box)
-    #Get centroid and put it in the table
-    cx = int(M['m10']/M['m00'])
-    cy = int(M['m01']/M['m00'])
-    centroid = [cx, cy]
+    if M['m00'] > 0:
+        #Get centroid and put it in the table
+        cx = int(M['m10']/M['m00'])
+        cy = int(M['m01']/M['m00'])
+        centroid = [cx, cy]
     #Get perimeter and make Circularity
     perimeter = cv2.arcLength(cnt,True)
-    circularity = (int(perimeter)^2)/area
-    if area < 20:
+    if area > 0:
+        circularity = (int(perimeter)^2)/area
+    if area < setpoint:
         x += 1
     else:
         a[i-x][0] = area
@@ -109,9 +153,9 @@ while i <= len(contours):
     i += 1
 
 #Output data table to .csv file
-df.to_csv('image_1.csv', index=True, header=True, sep=' ')
+df.to_csv(name+'.csv', index=True, header=True, sep=' ')
 
 #Show final image
-cv2.imwrite("/home/tdreilloc/Documents/CS463/assignments/image_1.jpg", labeled_img)
+cv2.imwrite("/home/tdreilloc/Documents/CS463/assignments/"+name+".jpg", labeled_img)
 cv2.imshow('rectangle',labeled_img)
 cv2.waitKey()
