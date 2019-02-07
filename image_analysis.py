@@ -1,3 +1,14 @@
+#References:
+#https://docs.opencv.org/3.3.1/d9/d61/tutorial_py_morphological_ops.html
+#https://docs.opencv.org/3.4.2/dd/d49/tutorial_py_contour_features.html
+#https://docs.opencv.org/3.3.1/d3/db4/tutorial_py_watershed.html
+#https://stackoverflow.com/questions/46441893/connected-component-labeling-in-python?rq=1
+#
+#All credit goes to Alexander Reynolds, https://stackoverflow.com/users/5087436/alexander-reynolds
+#in regards to labeling the connected components with colors
+ 
+#THIS SCRIPT WILL HAVE TO BE TWEAKED ACCORDING TO THE IMAGES
+
 import cv2
 import tkinter as tk
 import numpy as np
